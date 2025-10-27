@@ -49,8 +49,9 @@ public class GlobalExceptionHandler {
         log.error("Type mismatch error: {} - Source: {}", ex.getMessage(), ex.getClass(), ex);
         
         String typeName = "desconhecido";
-        if (ex.getRequiredType() != null) {
-            typeName = ex.getRequiredType().getSimpleName();
+        Class<?> requiredType = ex.getRequiredType();
+        if (requiredType != null) {
+            typeName = requiredType.getSimpleName();
         }
         
         String details = String.format("O parâmetro '%s' com valor '%s' não pôde ser convertido para o tipo %s", 
