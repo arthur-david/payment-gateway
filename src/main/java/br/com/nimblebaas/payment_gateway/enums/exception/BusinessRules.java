@@ -1,0 +1,12 @@
+package br.com.nimblebaas.payment_gateway.enums.exception;
+
+public enum BusinessRules {
+    
+    INVALID_INPUT_DATA,
+    USER_ALREADY_EXISTS,
+    USER_NOT_FOUND,
+    TOKEN_REQUIRED,
+    INVALID_CREDENTIALS,
+    INVALID_TOKEN,
+    INVALID_PASSWORD
+}
