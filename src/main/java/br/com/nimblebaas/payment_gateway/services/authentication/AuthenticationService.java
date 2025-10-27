@@ -67,7 +67,8 @@ public class AuthenticationService {
                 HttpStatus.UNAUTHORIZED,
                 getClass(),
                 BusinessRules.USER_NOT_FOUND,
-                "Usuário não encontrado"
+                "Usuário não encontrado com o CPF: %s",
+                cpf
             ));
         
         RefreshToken refreshToken = refreshTokenService.fetchAValidRefreshToken(claims, user);

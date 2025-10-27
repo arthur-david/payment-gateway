@@ -1,4 +1,4 @@
-package br.com.nimblebaas.payment_gateway.controllers.user;
+package br.com.nimblebaas.payment_gateway.controllers.users;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;

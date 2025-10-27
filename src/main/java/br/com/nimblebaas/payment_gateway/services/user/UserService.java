@@ -1,5 +1,6 @@
 package br.com.nimblebaas.payment_gateway.services.user;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -43,8 +44,7 @@ public class UserService {
     }
 
     public void changePassword(UserAuthenticated userAuthenticated, ChangePasswordInputRecord changePasswordInputRecord) {
-        var user = findByCpf(userAuthenticated.getUsername())
-            .orElseThrow(() -> new BusinessRuleException(getClass(), BusinessRules.USER_NOT_FOUND, "Usuário não encontrado"));
+        var user = getUserByCpf(userAuthenticated.getUsername());
 
         if (!passwordEncoder.matches(changePasswordInputRecord.currentPassword(), user.getPassword()))
             throw new BusinessRuleException(getClass(), BusinessRules.INVALID_PASSWORD, "Senha atual incorreta");
@@ -52,6 +52,7 @@ public class UserService {
         userCreationValidator.validateIfPasswordIsStrong(changePasswordInputRecord.newPassword());
 
         user.setPassword(passwordEncoder.encode(changePasswordInputRecord.newPassword()));
+        user.setLastChangedPasswordAt(LocalDateTime.now());
 
         refreshTokenService.revokeUserRefreshTokens(user);
 
@@ -75,6 +76,11 @@ public class UserService {
             email = cpfOrEmail.trim().toLowerCase();
 
         return userRepository.findByCpfOrEmail(cpf, email);
+    }
+
+    public User getUserByCpf(String cpf) {
+        return findByCpf(cpf)
+            .orElseThrow(() -> new BusinessRuleException(getClass(), BusinessRules.USER_NOT_FOUND, "Usuário não encontrado com o CPF: %s", cpf));
     }
 
     public Optional<User> findByCpf(String cpf) {
