@@ -2,11 +2,14 @@ package br.com.nimblebaas.payment_gateway.dtos.input.account;
 
 import java.math.BigDecimal;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
 
+@Schema(description = "Dados para depósito de saldo")
 public record MakeSelfDepositInputRecord(
     
+    @Schema(description = "Valor do depósito em reais", example = "100.50")
     @NotNull(message = "O valor do depósito é obrigatório")
     @DecimalMin(value = "0.01", message = "O valor do depósito deve ser maior que 0")
     BigDecimal amount

@@ -8,6 +8,7 @@ import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -38,6 +39,7 @@ public class AuthenticationFilter extends OncePerRequestFilter {
     private final RefreshTokenService refreshTokenService;
     private final UserService userService;
     private final ObjectMapper objectMapper;
+    private final AntPathMatcher pathMatcher = new AntPathMatcher();
 
     @Override
     protected void doFilterInternal(
@@ -78,8 +80,9 @@ public class AuthenticationFilter extends OncePerRequestFilter {
     }
 
     private boolean isPublicEndpoint(HttpServletRequest request) {
+        String requestURI = request.getRequestURI();
         return Arrays.stream(SecurityConfig.getPublicEndpoints())
-            .anyMatch(endpoint -> request.getRequestURI().contains(endpoint));
+            .anyMatch(endpoint -> pathMatcher.match(endpoint, requestURI));
     }
 
     private String extractToken(HttpServletRequest request) {
