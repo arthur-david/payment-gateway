@@ -1,6 +1,7 @@
 package br.com.nimblebaas.payment_gateway.repositories.charge;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -13,4 +14,6 @@ public interface ChargeRepository extends JpaRepository<Charge, Long> {
     List<Charge> findByOriginatorUserAndStatusIn(User user, List<ChargeStatus> statuses);
     
     List<Charge> findByDestinationUserAndStatusIn(User user, List<ChargeStatus> statuses);
+
+    Optional<Charge> findByIdentifier(String identifier);
 }

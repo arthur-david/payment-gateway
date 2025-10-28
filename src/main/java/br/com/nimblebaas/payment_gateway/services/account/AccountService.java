@@ -15,7 +15,7 @@ import br.com.nimblebaas.payment_gateway.enums.authorizer.AuthorizerPurpose;
 import br.com.nimblebaas.payment_gateway.enums.exception.BusinessRules;
 import br.com.nimblebaas.payment_gateway.exceptions.BusinessRuleException;
 import br.com.nimblebaas.payment_gateway.repositories.account.AccountRepository;
-import br.com.nimblebaas.payment_gateway.services.authorizer.factory.AuthorizerServiceFactory;
+import br.com.nimblebaas.payment_gateway.services.authorizer.AuthorizerService;
 import br.com.nimblebaas.payment_gateway.services.transaction.TransactionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -25,12 +25,12 @@ import lombok.RequiredArgsConstructor;
 public class AccountService {
     
     private final AccountRepository accountRepository;
-    private final AuthorizerServiceFactory authorizerServiceFactory;
+    private final AuthorizerService authorizerServiceFactory;
     private final TransactionService transactionService;
 
     public void openAccount(User user) {
         var account = new Account(user);
-        accountRepository.save(account);
+        save(account);
     }
 
     public BalanceOutputRecord getBalance(UserAuthenticated userAuthenticated) {
@@ -68,15 +68,15 @@ public class AccountService {
         transactionService.completeSuccessTransaction(transaction);
     }
 
-    public void makeWithdraw(Account account, BigDecimal amount) {
+    public void makeWithdrawal(Account account, BigDecimal amount) {
         if (amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new BusinessRuleException(
                 getClass(), 
-                BusinessRules.INVALID_AMOUNT_TO_WITHDRAW, 
+                BusinessRules.INVALID_AMOUNT_TO_WITHDRAWAL, 
                 "O valor do saque deve ser maior que 0");
         }
 
-        if (account.getAvailableBalance().compareTo(amount) < 0) {
+        if (account.getTotalBalance().subtract(amount).compareTo(BigDecimal.ZERO) < 0) {
             throw new BusinessRuleException(
                 getClass(), 
                 BusinessRules.INSUFFICIENT_BALANCE, 
@@ -84,7 +84,7 @@ public class AccountService {
         }
 
         account.setTotalBalance(account.getTotalBalance().subtract(amount));
-        accountRepository.save(account);
+        save(account);
     }
 
     public void makeDeposit(Account account, BigDecimal amount) {
@@ -96,16 +96,19 @@ public class AccountService {
         }
 
         account.setTotalBalance(account.getTotalBalance().add(amount));
-        accountRepository.save(account);
+        save(account);
     }
 
     private boolean authorizeDeposit(String cpf, String identifier, BigDecimal amount) {
-        var authorizerService = authorizerServiceFactory.getAuthorizerService(AuthorizerPurpose.DEPOSIT);
         var getAuthorizerDTO = GetAuthorizerDTO.builder()
             .cpf(cpf)
             .identifier(identifier)
             .amount(amount)
             .build();
-        return authorizerService.authorize(getAuthorizerDTO);
+        return authorizerServiceFactory.authorize(AuthorizerPurpose.DEPOSIT, getAuthorizerDTO);
+    }
+
+    public Account save(Account account) {
+        return accountRepository.save(account);
     }
 }

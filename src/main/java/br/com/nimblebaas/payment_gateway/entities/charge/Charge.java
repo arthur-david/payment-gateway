@@ -62,6 +62,8 @@ public class Charge {
     @Enumerated(EnumType.STRING)
     private ChargeStatus status;
 
+    private String errorMessage;
+
     @OneToOne(mappedBy = "charge", fetch = FetchType.LAZY)
     private ChargePayment payment;
 

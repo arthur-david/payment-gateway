@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import br.com.nimblebaas.payment_gateway.configs.authentication.UserAuthenticated;
 import br.com.nimblebaas.payment_gateway.dtos.input.charge.ChargeInputRecord;
+import br.com.nimblebaas.payment_gateway.dtos.input.charge.ChargePaymentInputRecord;
 import br.com.nimblebaas.payment_gateway.dtos.output.charge.ChargeOutputDTO;
 import br.com.nimblebaas.payment_gateway.enums.charge.ChargeStatus;
 import br.com.nimblebaas.payment_gateway.services.charge.ChargeService;
@@ -46,5 +47,11 @@ public class ChargeController {
             @RequestParam(required = false) List<ChargeStatus> statuses) {
         var receivedCharges = chargeService.getReceivedChargesByUser(userAuthenticated, statuses);
         return ResponseEntity.ok(receivedCharges);
+    }
+
+    @PostMapping("/pay")
+    public ResponseEntity<Void> pay(@AuthenticationPrincipal UserAuthenticated userAuthenticated, @RequestBody ChargePaymentInputRecord chargePaymentInputRecord) {
+        chargeService.pay(userAuthenticated, chargePaymentInputRecord);
+        return ResponseEntity.noContent().build();
     }
 }

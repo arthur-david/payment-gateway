@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 import org.springframework.stereotype.Service;
 
 import br.com.nimblebaas.payment_gateway.entities.account.Account;
+import br.com.nimblebaas.payment_gateway.entities.account.HoldBalance;
 import br.com.nimblebaas.payment_gateway.entities.transaction.Transaction;
 import br.com.nimblebaas.payment_gateway.enums.transaction.TransactionPurpose;
 import br.com.nimblebaas.payment_gateway.enums.transaction.TransactionStatus;
@@ -20,10 +21,36 @@ public class TransactionService {
 
     public Transaction createDepositTransaction(Account account, BigDecimal amount, String authorizationIdentifier) {
         var transaction = Transaction.builder()
-            .destinationAccount(account)
+            .partyAccount(account)
             .amount(amount)
             .type(TransactionType.CREDIT)
             .purpose(TransactionPurpose.DEPOSIT)
+            .status(TransactionStatus.PENDING)
+            .authorizationIdentifier(authorizationIdentifier)
+            .build();
+        return transactionRepository.save(transaction);
+    }
+
+    public Transaction createChargePaymentDebitTransaction(Account partyAccount, Account counterpartAccount, BigDecimal amount, HoldBalance holdBalance) {
+        var transaction = Transaction.builder()
+            .partyAccount(partyAccount)
+            .counterpartAccount(counterpartAccount)
+            .amount(amount)
+            .type(TransactionType.DEBIT)
+            .purpose(TransactionPurpose.CHARGE)
+            .status(TransactionStatus.PENDING)
+            .holdBalance(holdBalance)
+            .build();
+        return transactionRepository.save(transaction);
+    }
+
+    public Transaction createChargePaymentCreditTransaction(Account partyAccount, Account counterpartAccount, BigDecimal amount, String authorizationIdentifier) {
+        var transaction = Transaction.builder()
+            .partyAccount(partyAccount)
+            .counterpartAccount(counterpartAccount)
+            .amount(amount)
+            .type(TransactionType.CREDIT)
+            .purpose(TransactionPurpose.CHARGE)
             .status(TransactionStatus.PENDING)
             .authorizationIdentifier(authorizationIdentifier)
             .build();

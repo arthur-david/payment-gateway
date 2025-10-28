@@ -4,5 +4,5 @@ public enum HoldBalanceStatus {
 
     PENDING,
     CONFIRMED,
-    REJECTED;
+    CANCELLED;
 }

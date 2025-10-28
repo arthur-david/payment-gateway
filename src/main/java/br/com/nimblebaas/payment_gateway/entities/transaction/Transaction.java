@@ -46,12 +46,12 @@ public class Transaction {
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "originator_account_id")
-    private Account originatorAccount;
+    @JoinColumn(name = "party_account_id")
+    private Account partyAccount;
 
     @ManyToOne
-    @JoinColumn(name = "destination_account_id")
-    private Account destinationAccount;
+    @JoinColumn(name = "counterpart_account_id")
+    private Account counterpartAccount;
 
     @Column(nullable = false)
     private BigDecimal amount;
@@ -68,7 +68,6 @@ public class Transaction {
     @Enumerated(EnumType.STRING)
     private TransactionStatus status;
 
-    @Column(nullable = false)
     private String authorizationIdentifier;
 
     @OneToOne(fetch = FetchType.LAZY)

@@ -1,4 +1,4 @@
-package br.com.nimblebaas.payment_gateway.services.authorizer.factory;
+package br.com.nimblebaas.payment_gateway.services.authorizer;
 
 import br.com.nimblebaas.payment_gateway.dtos.internal.authorizer.GetAuthorizerDTO;
 import br.com.nimblebaas.payment_gateway.enums.authorizer.AuthorizerPurpose;

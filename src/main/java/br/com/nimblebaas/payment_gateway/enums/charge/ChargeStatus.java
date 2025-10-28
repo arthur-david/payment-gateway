@@ -4,5 +4,7 @@ public enum ChargeStatus {
 
     PENDING,
     PAID,
-    CANCELLED;
+    CANCELLED,
+    PAYMENT_FAILED,
+    PAYMENT_CANCELLED
 }

@@ -60,5 +60,4 @@ public class ChargePayment {
     @Column(nullable = false)
     @UpdateTimestamp
     private LocalDateTime updatedAt;
-
 }

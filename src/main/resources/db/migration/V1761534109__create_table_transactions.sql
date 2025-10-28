@@ -1,7 +1,7 @@
 create table if not exists transactions (
     id bigserial primary key,
-    originator_account_id bigint references accounts(id),
-    destination_account_id bigint references accounts(id),
+    party_account_id bigint references accounts(id),
+    counterpart_account_id bigint references accounts(id),
     amount numeric not null,
     type varchar not null,
     purpose varchar not null,

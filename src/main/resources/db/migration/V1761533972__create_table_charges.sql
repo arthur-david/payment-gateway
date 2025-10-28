@@ -6,6 +6,7 @@ create table if not exists charges (
     amount numeric not null,
     description text,
     status varchar not null,
+    error_message text,
     created_at timestamp not null default current_timestamp,
     updated_at timestamp not null default current_timestamp
 );

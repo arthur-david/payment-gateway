@@ -8,7 +8,6 @@ import br.com.nimblebaas.payment_gateway.dtos.internal.authorizer.GetAuthorizerD
 import br.com.nimblebaas.payment_gateway.enums.authorizer.AuthorizerPurpose;
 import br.com.nimblebaas.payment_gateway.enums.exception.BusinessRules;
 import br.com.nimblebaas.payment_gateway.exceptions.BusinessRuleException;
-import br.com.nimblebaas.payment_gateway.services.authorizer.factory.IAuthorizerService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
