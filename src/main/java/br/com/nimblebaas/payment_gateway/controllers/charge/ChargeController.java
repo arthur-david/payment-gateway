@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import br.com.nimblebaas.payment_gateway.configs.authentication.UserAuthenticated;
+import br.com.nimblebaas.payment_gateway.dtos.input.charge.ChargeCancelInputRecord;
 import br.com.nimblebaas.payment_gateway.dtos.input.charge.ChargeInputRecord;
 import br.com.nimblebaas.payment_gateway.dtos.input.charge.ChargePaymentInputRecord;
 import br.com.nimblebaas.payment_gateway.dtos.output.charge.ChargeOutputDTO;
@@ -52,6 +53,12 @@ public class ChargeController {
     @PostMapping("/pay")
     public ResponseEntity<Void> pay(@AuthenticationPrincipal UserAuthenticated userAuthenticated, @RequestBody ChargePaymentInputRecord chargePaymentInputRecord) {
         chargeService.pay(userAuthenticated, chargePaymentInputRecord);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/cancel")
+    public ResponseEntity<Void> cancel(@AuthenticationPrincipal UserAuthenticated userAuthenticated, @RequestBody ChargeCancelInputRecord chargeCancelInputRecord) {
+        chargeService.cancel(userAuthenticated, chargeCancelInputRecord);
         return ResponseEntity.noContent().build();
     }
 }

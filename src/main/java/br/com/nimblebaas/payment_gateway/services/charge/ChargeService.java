@@ -8,6 +8,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 import br.com.nimblebaas.payment_gateway.configs.authentication.UserAuthenticated;
+import br.com.nimblebaas.payment_gateway.dtos.input.charge.ChargeCancelInputRecord;
 import br.com.nimblebaas.payment_gateway.dtos.input.charge.ChargeInputRecord;
 import br.com.nimblebaas.payment_gateway.dtos.input.charge.ChargePaymentInputRecord;
 import br.com.nimblebaas.payment_gateway.dtos.internal.charge.ChargePaymentDTO;
@@ -82,11 +83,18 @@ public class ChargeService {
                 "Cobrança não encontrada"
             ));
 
-        if (!charge.getDestinationUser().getCpf().equals(userAuthenticated.getUser().getCpf()))
+        if (!charge.isUserAllowedToPay(userAuthenticated.getUser()))
             throw new BusinessRuleException(
                 getClass(), 
                 BusinessRules.CHARGE_NOT_ALLOWED_TO_PAY, 
                 "Você não é o destinatário da cobrança"
+            );
+
+        if (!charge.isStatusAllowedToPay())
+            throw new BusinessRuleException(
+                getClass(), 
+                BusinessRules.CHARGE_NOT_ALLOWED_TO_PAY, 
+                "A cobrança não está permitida para ser paga"
             );
 
         try {
@@ -108,6 +116,58 @@ public class ChargeService {
         }
 
         charge.setStatus(ChargeStatus.PAID);
+        charge.setErrorMessage(null);
+        chargeRepository.save(charge);
+    }
+
+    public void cancel(UserAuthenticated userAuthenticated, @Valid ChargeCancelInputRecord chargeCancelInputRecord) {
+        var charge = chargeRepository.findByIdentifier(chargeCancelInputRecord.identifier())
+            .orElseThrow(() -> new BusinessRuleException(
+                getClass(), 
+                BusinessRules.CHARGE_NOT_FOUND, 
+                "Cobrança não encontrada"
+            ));
+
+        if (!charge.isUserAllowedToCancel(userAuthenticated.getUser()))
+            throw new BusinessRuleException(
+                getClass(), 
+                BusinessRules.CHARGE_NOT_ALLOWED_TO_CANCEL, 
+                "Você não é o originador da cobrança"
+            );
+
+        if (!charge.isStatusAllowedToCancel())
+            throw new BusinessRuleException(
+                getClass(), 
+                BusinessRules.CHARGE_NOT_ALLOWED_TO_CANCEL, 
+                "A cobrança não está permitida para ser cancelada"
+            );
+
+        if (charge.isStatusPending()) {
+            charge.setStatus(ChargeStatus.CANCELLED);
+            charge.setErrorMessage(null);
+            chargeRepository.save(charge);
+            return;
+        }
+            
+        try {
+            chargePaymentService.cancel(charge);
+        } catch (BusinessRuleException e) {
+            charge.setStatus(ChargeStatus.CANCELLED_FAILED);
+            charge.setErrorMessage(e.getErrorDTO().getDetails());
+            chargeRepository.save(charge);
+            throw e;
+        } catch (Exception e) {
+            charge.setStatus(ChargeStatus.CANCELLED_FAILED);
+            charge.setErrorMessage(e.getMessage());
+            chargeRepository.save(charge);
+            throw new BusinessRuleException(
+                getClass(), 
+                BusinessRules.CHARGE_CANCEL_ERROR, 
+                "Erro ao cancelar a cobrança"
+            );
+        }
+
+        charge.setStatus(ChargeStatus.CANCELLED);
         charge.setErrorMessage(null);
         chargeRepository.save(charge);
     }

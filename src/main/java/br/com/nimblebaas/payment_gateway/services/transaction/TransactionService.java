@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 
 import br.com.nimblebaas.payment_gateway.entities.account.Account;
 import br.com.nimblebaas.payment_gateway.entities.account.HoldBalance;
+import br.com.nimblebaas.payment_gateway.entities.charge.Charge;
 import br.com.nimblebaas.payment_gateway.entities.transaction.Transaction;
 import br.com.nimblebaas.payment_gateway.enums.transaction.TransactionPurpose;
 import br.com.nimblebaas.payment_gateway.enums.transaction.TransactionStatus;
@@ -22,6 +23,7 @@ public class TransactionService {
     public Transaction createDepositTransaction(Account account, BigDecimal amount, String authorizationIdentifier) {
         var transaction = Transaction.builder()
             .partyAccount(account)
+            .counterpartAccount(account)
             .amount(amount)
             .type(TransactionType.CREDIT)
             .purpose(TransactionPurpose.DEPOSIT)
@@ -31,28 +33,55 @@ public class TransactionService {
         return transactionRepository.save(transaction);
     }
 
-    public Transaction createChargePaymentDebitTransaction(Account partyAccount, Account counterpartAccount, BigDecimal amount, HoldBalance holdBalance) {
+    public Transaction createChargePaymentDebitTransaction(Charge charge, HoldBalance holdBalance) {
         var transaction = Transaction.builder()
-            .partyAccount(partyAccount)
-            .counterpartAccount(counterpartAccount)
-            .amount(amount)
+            .partyAccount(charge.getDestinationUser().getAccount())
+            .counterpartAccount(charge.getOriginatorUser().getAccount())
+            .charge(charge)
+            .amount(charge.getAmount())
             .type(TransactionType.DEBIT)
-            .purpose(TransactionPurpose.CHARGE)
+            .purpose(TransactionPurpose.CHARGE_PAYMENT)
             .status(TransactionStatus.PENDING)
             .holdBalance(holdBalance)
             .build();
         return transactionRepository.save(transaction);
     }
 
-    public Transaction createChargePaymentCreditTransaction(Account partyAccount, Account counterpartAccount, BigDecimal amount, String authorizationIdentifier) {
+    public Transaction createChargeRefundDebitTransaction(Charge charge, HoldBalance holdBalance) {
         var transaction = Transaction.builder()
-            .partyAccount(partyAccount)
-            .counterpartAccount(counterpartAccount)
-            .amount(amount)
+            .partyAccount(charge.getOriginatorUser().getAccount())
+            .counterpartAccount(charge.getDestinationUser().getAccount())
+            .charge(charge)
+            .amount(charge.getAmount())
+            .type(TransactionType.DEBIT)
+            .purpose(TransactionPurpose.CHARGE_REFUND)
+            .status(TransactionStatus.PENDING)
+            .holdBalance(holdBalance)
+            .build();
+        return transactionRepository.save(transaction);
+    }
+
+    public Transaction createChargePaymentCreditTransaction(Charge charge, String authorizationIdentifier) {
+        var transaction = Transaction.builder()
+            .charge(charge)
+            .amount(charge.getAmount())
             .type(TransactionType.CREDIT)
-            .purpose(TransactionPurpose.CHARGE)
+            .purpose(TransactionPurpose.CHARGE_PAYMENT)
             .status(TransactionStatus.PENDING)
             .authorizationIdentifier(authorizationIdentifier)
+            .build();
+        return transactionRepository.save(transaction);
+    }
+
+    public Transaction createChargeRefundCreditTransaction(Charge charge) {
+        var transaction = Transaction.builder()
+            .partyAccount(charge.getDestinationUser().getAccount())
+            .counterpartAccount(charge.getOriginatorUser().getAccount())
+            .charge(charge)
+            .amount(charge.getAmount())
+            .type(TransactionType.CREDIT)
+            .purpose(TransactionPurpose.CHARGE_REFUND)
+            .status(TransactionStatus.PENDING)
             .build();
         return transactionRepository.save(transaction);
     }

@@ -11,12 +11,14 @@ import br.com.nimblebaas.payment_gateway.dtos.internal.charge.ChargePaymentDTO;
 import br.com.nimblebaas.payment_gateway.entities.account.Account;
 import br.com.nimblebaas.payment_gateway.entities.charge.Charge;
 import br.com.nimblebaas.payment_gateway.entities.charge.ChargePayment;
+import br.com.nimblebaas.payment_gateway.enums.account.HoldBalanceType;
 import br.com.nimblebaas.payment_gateway.enums.authorizer.AuthorizerPurpose;
 import br.com.nimblebaas.payment_gateway.enums.charge.PaymentMethod;
 import br.com.nimblebaas.payment_gateway.enums.exception.BusinessRules;
 import br.com.nimblebaas.payment_gateway.exceptions.BusinessRuleException;
 import br.com.nimblebaas.payment_gateway.repositories.charge.ChargePaymentRepository;
 import br.com.nimblebaas.payment_gateway.services.account.AccountService;
+import br.com.nimblebaas.payment_gateway.services.account.HoldBalanceService;
 import br.com.nimblebaas.payment_gateway.services.authorizer.AuthorizerService;
 import br.com.nimblebaas.payment_gateway.services.transaction.TransactionService;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +30,7 @@ public class CardChargePaymentService implements IChargePaymentService {
     private final TransactionService transactionService;
     private final AuthorizerService authorizerService;
     private final AccountService accountService;
+    private final HoldBalanceService holdBalanceService;
     private final ChargePaymentRepository chargePaymentRepository;
     
     @Override
@@ -38,8 +41,6 @@ public class CardChargePaymentService implements IChargePaymentService {
     @Override
     public void pay(ChargePaymentDTO chargePaymentDTO) {
         var charge = chargePaymentDTO.getCharge();
-        var originatorAccount = charge.getOriginatorUser().getAccount();
-        var destinationAccount = charge.getDestinationUser().getAccount();
 
         var authorizationIdentifier = String.format("%s_%s", AuthorizerPurpose.CARD_PAYMENT.name(), charge.getIdentifier());
 
@@ -52,7 +53,7 @@ public class CardChargePaymentService implements IChargePaymentService {
                 "Cobrança não autorizada");
         }
 
-        makeDeposit(originatorAccount, destinationAccount, charge.getAmount(), authorizationIdentifier);
+        makeDeposit(charge, charge.getAmount(), authorizationIdentifier);
 
         saveChargePayment(charge, authorizationIdentifier, chargePaymentDTO.getCardNumber());
     }
@@ -72,16 +73,14 @@ public class CardChargePaymentService implements IChargePaymentService {
         return authorizerService.authorize(AuthorizerPurpose.CARD_PAYMENT, getAuthorizerDTO);
     }
 
-    private void makeDeposit(Account originatorAccount, Account destinationAccount, BigDecimal amount, String authorizationIdentifier) {
+    private void makeDeposit(Charge charge, BigDecimal amount, String authorizationIdentifier) {
         var creditTransaction = transactionService.createChargePaymentCreditTransaction(
-            originatorAccount,
-            destinationAccount, 
-            amount, 
+            charge,
             authorizationIdentifier
         );
 
         try{
-            accountService.makeDeposit(originatorAccount, amount);
+            accountService.makeDeposit(charge.getOriginatorUser().getAccount(), amount);
         } catch (BusinessRuleException e) {
             transactionService.completeFailedTransaction(creditTransaction, e.getMessage());
             throw e;
@@ -103,6 +102,67 @@ public class CardChargePaymentService implements IChargePaymentService {
 
     @Override
     public void cancel(Charge charge) {
-        // TODO Auto-generated method stub
+        var originatorAccount = charge.getOriginatorUser().getAccount();
+
+        verifyOriginatorAccountBalance(originatorAccount, charge.getAmount());
+
+        var holdBalance = holdBalanceService.createHold(originatorAccount, charge.getAmount(), HoldBalanceType.CHARGE_REFUND);
+        var debitTransaction = transactionService.createChargeRefundDebitTransaction(charge, holdBalance);
+
+        var authorized = authorizeChargeRefund(charge.getOriginatorUser().getCpf(), charge.getPayment().getAuthorizationIdentifier(), charge.getAmount());
+
+        if (!authorized) {            
+            throw new BusinessRuleException(
+                getClass(), 
+                BusinessRules.AUTHORIZATION_FAILED, 
+                "Reembolso não autorizado");
+        }
+
+        try{
+            makeRefund(charge);
+        } catch (BusinessRuleException e) {
+            holdBalanceService.cancelHold(holdBalance);
+            transactionService.completeFailedTransaction(debitTransaction, e.getMessage());
+            throw e;
+        }
+
+        holdBalanceService.confirmHold(holdBalance);
+        transactionService.completeSuccessTransaction(debitTransaction);
+
+        saveChargeRefund(charge.getPayment());
+    }
+
+    private boolean authorizeChargeRefund(String cpf, String authorizationIdentifier, BigDecimal amount) {
+        var getAuthorizerDTO = GetAuthorizerDTO.builder()
+            .cpf(cpf)
+            .amount(amount)
+            .identifier(authorizationIdentifier)
+            .build();
+        return authorizerService.authorize(AuthorizerPurpose.CARD_REFUND, getAuthorizerDTO);
+    }
+
+    private void makeRefund(Charge charge) {
+        var creditTransaction = transactionService.createChargeRefundCreditTransaction(charge);
+
+        try{
+            accountService.makeDeposit(charge.getDestinationUser().getAccount(), charge.getAmount());
+        } catch (BusinessRuleException e) {
+            transactionService.completeFailedTransaction(creditTransaction, e.getMessage());
+            throw e;
+        }
+    }
+
+    private void saveChargeRefund(ChargePayment chargePayment) {
+        chargePayment.setCancelledAt(LocalDateTime.now());
+        chargePaymentRepository.save(chargePayment);
+    }
+
+    private void verifyOriginatorAccountBalance(Account originatorAccount, BigDecimal amount) {
+        if (originatorAccount.getAvailableBalance().subtract(amount).compareTo(BigDecimal.ZERO) < 0) {
+            throw new BusinessRuleException(
+                getClass(), 
+                BusinessRules.INSUFFICIENT_BALANCE, 
+                "Saldo insuficiente para reembolsar a cobrança");
+        }
     }
 }

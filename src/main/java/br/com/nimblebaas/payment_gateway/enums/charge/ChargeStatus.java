@@ -6,5 +6,5 @@ public enum ChargeStatus {
     PAID,
     CANCELLED,
     PAYMENT_FAILED,
-    PAYMENT_CANCELLED
+    CANCELLED_FAILED
 }

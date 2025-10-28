@@ -38,16 +38,15 @@ public class BalanceChargePaymentService implements IChargePaymentService {
     @Override
     public void pay(ChargePaymentDTO chargePaymentDTO) {
         var charge = chargePaymentDTO.getCharge();
-        var originatorAccount = charge.getOriginatorUser().getAccount();
         var destinationAccount = charge.getDestinationUser().getAccount();
 
         verifyDestinationAccountBalance(destinationAccount, charge.getAmount());
 
         var holdBalance = holdBalanceService.createHold(destinationAccount, charge.getAmount(), HoldBalanceType.CHARGE_PAYMENT);
-        var debitTransaction = transactionService.createChargePaymentDebitTransaction(destinationAccount, originatorAccount, charge.getAmount(), holdBalance);
+        var debitTransaction = transactionService.createChargePaymentDebitTransaction(charge, holdBalance);
 
         try{
-            makeDeposit(originatorAccount, destinationAccount, charge.getAmount());
+            makeDeposit(charge, charge.getAmount());
         } catch (BusinessRuleException e) {
             holdBalanceService.cancelHold(holdBalance);
             transactionService.completeFailedTransaction(debitTransaction, e.getMessage());
@@ -69,16 +68,14 @@ public class BalanceChargePaymentService implements IChargePaymentService {
         }
     }
 
-    private void makeDeposit(Account originatorAccount, Account destinationAccount, BigDecimal amount) {
+    private void makeDeposit(Charge charge, BigDecimal amount) {
         var creditTransaction = transactionService.createChargePaymentCreditTransaction(
-            originatorAccount,
-            destinationAccount, 
-            amount, 
+            charge,
             null
         );
 
         try{
-            accountService.makeDeposit(originatorAccount, amount);
+            accountService.makeDeposit(charge.getOriginatorUser().getAccount(), amount);
         } catch (BusinessRuleException e) {
             transactionService.completeFailedTransaction(creditTransaction, e.getMessage());
             throw e;
@@ -98,6 +95,49 @@ public class BalanceChargePaymentService implements IChargePaymentService {
 
     @Override
     public void cancel(Charge charge) {
-        // TODO Auto-generated method stub
+        var originatorAccount = charge.getOriginatorUser().getAccount();
+
+        verifyOriginatorAccountBalance(originatorAccount, charge.getAmount());
+
+        var holdBalance = holdBalanceService.createHold(originatorAccount, charge.getAmount(), HoldBalanceType.CHARGE_REFUND);
+        var debitTransaction = transactionService.createChargeRefundDebitTransaction(charge, holdBalance);
+
+        try{
+            makeRefund(charge);
+        } catch (BusinessRuleException e) {
+            holdBalanceService.cancelHold(holdBalance);
+            transactionService.completeFailedTransaction(debitTransaction, e.getMessage());
+            throw e;
+        }
+
+        holdBalanceService.confirmHold(holdBalance);
+        transactionService.completeSuccessTransaction(debitTransaction);
+
+        saveChargeRefund(charge.getPayment());
+    }
+
+    private void makeRefund(Charge charge) {
+        var creditTransaction = transactionService.createChargeRefundCreditTransaction(charge);
+
+        try{
+            accountService.makeDeposit(charge.getDestinationUser().getAccount(), charge.getAmount());
+        } catch (BusinessRuleException e) {
+            transactionService.completeFailedTransaction(creditTransaction, e.getMessage());
+            throw e;
+        }
+    }
+
+    private void saveChargeRefund(ChargePayment chargePayment) {
+        chargePayment.setCancelledAt(LocalDateTime.now());
+        chargePaymentRepository.save(chargePayment);
+    }
+
+    private void verifyOriginatorAccountBalance(Account originatorAccount, BigDecimal amount) {
+        if (originatorAccount.getAvailableBalance().subtract(amount).compareTo(BigDecimal.ZERO) < 0) {
+            throw new BusinessRuleException(
+                getClass(), 
+                BusinessRules.INSUFFICIENT_BALANCE, 
+                "Saldo insuficiente para reembolsar a cobrança");
+        }
     }
 }

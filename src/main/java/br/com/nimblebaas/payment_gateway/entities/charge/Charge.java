@@ -3,6 +3,7 @@ package br.com.nimblebaas.payment_gateway.entities.charge;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -74,4 +75,33 @@ public class Charge {
     @Column(nullable = false)
     @UpdateTimestamp
     private LocalDateTime updatedAt;
+
+    public boolean isUserAllowedToPay(User user) {
+        return getDestinationUser().getCpf().equals(user.getCpf());
+    }
+
+    public boolean isUserAllowedToCancel(User user) {
+        return getOriginatorUser().getCpf().equals(user.getCpf());
+    }
+
+    public boolean isStatusAllowedToPay() {
+        return List.of(
+            ChargeStatus.PENDING, 
+            ChargeStatus.PAYMENT_FAILED, 
+            ChargeStatus.CANCELLED_FAILED
+        ).contains(getStatus());
+    }
+    
+    public boolean isStatusAllowedToCancel() {
+        return List.of(
+            ChargeStatus.PENDING,
+            ChargeStatus.PAID,
+            ChargeStatus.PAYMENT_FAILED, 
+            ChargeStatus.CANCELLED_FAILED
+        ).contains(getStatus());
+    }
+
+    public boolean isStatusPending() {
+        return getStatus().equals(ChargeStatus.PENDING);
+    }
 }

@@ -5,10 +5,10 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import br.com.nimblebaas.payment_gateway.dtos.internal.charge.ChargePaymentDTO;
+import br.com.nimblebaas.payment_gateway.entities.charge.Charge;
 import br.com.nimblebaas.payment_gateway.enums.charge.PaymentMethod;
 import br.com.nimblebaas.payment_gateway.enums.exception.BusinessRules;
 import br.com.nimblebaas.payment_gateway.exceptions.BusinessRuleException;
-import br.com.nimblebaas.payment_gateway.repositories.charge.ChargePaymentRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -17,7 +17,6 @@ import lombok.RequiredArgsConstructor;
 public class ChargePaymentService {
 
     private final List<IChargePaymentService> chargePaymentServices;
-    private final ChargePaymentRepository chargePaymentRepository;
 
     private IChargePaymentService getChargePaymentService(PaymentMethod paymentMethod) {
         return chargePaymentServices.stream()
@@ -31,5 +30,9 @@ public class ChargePaymentService {
 
     public void pay(@Valid ChargePaymentDTO chargePaymentDTO, PaymentMethod paymentMethod) {
         getChargePaymentService(paymentMethod).pay(chargePaymentDTO);
+    }
+
+    public void cancel(Charge charge) {
+        getChargePaymentService(charge.getPayment().getPaymentMethod()).cancel(charge);
     }
 }
