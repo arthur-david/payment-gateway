@@ -438,7 +438,7 @@ class ChargeServiceTest {
         
         doThrow(paymentException).when(chargePaymentService).pay(any(ChargePaymentDTO.class), any(PaymentMethod.class));
 
-        BusinessRuleException exception = assertThrows(
+        assertThrows(
             BusinessRuleException.class,
             () -> chargeService.pay(destinationAuthenticated, paymentInput)
         );
@@ -502,7 +502,7 @@ class ChargeServiceTest {
         
         doThrow(cancelException).when(chargePaymentService).cancel(any(Charge.class));
 
-        BusinessRuleException exception = assertThrows(
+        assertThrows(
             BusinessRuleException.class,
             () -> chargeService.cancel(userAuthenticated, cancelInput)
         );

@@ -4,29 +4,16 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class AuthorizerResponseTest {
 
-    @Test
-    void shouldReturnTrueWhenStatusIsSuccess() {
+    @ParameterizedTest
+    @ValueSource(strings = {"success", "SUCCESS", "SuCcEsS"})
+    void shouldReturnTrueWhenStatusIsSuccessInAnyCase(String status) {
         AuthorizerResponse response = new AuthorizerResponse();
-        response.setStatus("success");
-
-        assertTrue(response.isSuccess());
-    }
-
-    @Test
-    void shouldReturnTrueWhenStatusIsSuccessIgnoringCase() {
-        AuthorizerResponse response = new AuthorizerResponse();
-        response.setStatus("SUCCESS");
-
-        assertTrue(response.isSuccess());
-    }
-
-    @Test
-    void shouldReturnTrueWhenStatusIsSuccessMixedCase() {
-        AuthorizerResponse response = new AuthorizerResponse();
-        response.setStatus("SuCcEsS");
+        response.setStatus(status);
 
         assertTrue(response.isSuccess());
     }

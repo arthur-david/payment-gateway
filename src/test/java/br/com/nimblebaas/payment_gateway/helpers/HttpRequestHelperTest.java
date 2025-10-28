@@ -9,6 +9,8 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -19,9 +21,7 @@ class HttpRequestHelperTest {
         Constructor<HttpRequestHelper> constructor = HttpRequestHelper.class.getDeclaredConstructor();
         constructor.setAccessible(true);
         
-        assertThrows(InvocationTargetException.class, () -> {
-            constructor.newInstance();
-        });
+        assertThrows(InvocationTargetException.class, constructor::newInstance);
     }
 
     @Test
@@ -31,35 +31,19 @@ class HttpRequestHelperTest {
         assertEquals("unknown", ip);
     }
 
-    @Test
-    void shouldGetClientIpFromXForwardedForHeader() {
+    @ParameterizedTest
+    @CsvSource({
+        "X-Forwarded-For,192.168.1.1,192.168.1.1",
+        "X-Forwarded-For,'192.168.1.1, 10.0.0.1, 172.16.0.1',192.168.1.1",
+        "Proxy-Client-IP,10.0.0.1,10.0.0.1"
+    })
+    void shouldGetClientIpFromHeaders(String headerName, String headerValue, String expectedIp) {
         HttpServletRequest request = mock(HttpServletRequest.class);
-        when(request.getHeader("X-Forwarded-For")).thenReturn("192.168.1.1");
+        when(request.getHeader(headerName)).thenReturn(headerValue);
 
         String ip = HttpRequestHelper.getClientIp(request);
 
-        assertEquals("192.168.1.1", ip);
-    }
-
-    @Test
-    void shouldGetFirstIpFromMultipleXForwardedForIps() {
-        HttpServletRequest request = mock(HttpServletRequest.class);
-        when(request.getHeader("X-Forwarded-For")).thenReturn("192.168.1.1, 10.0.0.1, 172.16.0.1");
-
-        String ip = HttpRequestHelper.getClientIp(request);
-
-        assertEquals("192.168.1.1", ip);
-    }
-
-    @Test
-    void shouldGetClientIpFromProxyClientIPHeader() {
-        HttpServletRequest request = mock(HttpServletRequest.class);
-        when(request.getHeader("X-Forwarded-For")).thenReturn(null);
-        when(request.getHeader("Proxy-Client-IP")).thenReturn("10.0.0.1");
-
-        String ip = HttpRequestHelper.getClientIp(request);
-
-        assertEquals("10.0.0.1", ip);
+        assertEquals(expectedIp, ip);
     }
 
     @Test
@@ -82,21 +66,11 @@ class HttpRequestHelperTest {
         assertEquals("unknown", ip);
     }
 
-    @Test
-    void shouldIgnoreUnknownHeaderValue() {
+    @ParameterizedTest
+    @CsvSource({"unknown", "''"})
+    void shouldIgnoreInvalidHeaderValues(String headerValue) {
         HttpServletRequest request = mock(HttpServletRequest.class);
-        when(request.getHeader("X-Forwarded-For")).thenReturn("unknown");
-        when(request.getRemoteAddr()).thenReturn("127.0.0.1");
-
-        String ip = HttpRequestHelper.getClientIp(request);
-
-        assertEquals("127.0.0.1", ip);
-    }
-
-    @Test
-    void shouldIgnoreEmptyHeaderValue() {
-        HttpServletRequest request = mock(HttpServletRequest.class);
-        when(request.getHeader("X-Forwarded-For")).thenReturn("");
+        when(request.getHeader("X-Forwarded-For")).thenReturn(headerValue);
         when(request.getRemoteAddr()).thenReturn("127.0.0.1");
 
         String ip = HttpRequestHelper.getClientIp(request);
@@ -114,19 +88,16 @@ class HttpRequestHelperTest {
         assertEquals("Mozilla/5.0", userAgent);
     }
 
-    @Test
-    void shouldReturnUnknownWhenUserAgentIsNull() {
-        HttpServletRequest request = mock(HttpServletRequest.class);
-        when(request.getHeader("User-Agent")).thenReturn(null);
+    @ParameterizedTest
+    @CsvSource({"true,unknown", "false,"})
+    void shouldReturnUnknownWhenUserAgentNotAvailable(boolean isNullRequest, String headerValue) {
+        HttpServletRequest request = isNullRequest ? null : mock(HttpServletRequest.class);
+        
+        if (!isNullRequest) {
+            when(request.getHeader("User-Agent")).thenReturn(headerValue);
+        }
 
         String userAgent = HttpRequestHelper.getUserAgent(request);
-
-        assertEquals("unknown", userAgent);
-    }
-
-    @Test
-    void shouldReturnUnknownWhenRequestIsNullForUserAgent() {
-        String userAgent = HttpRequestHelper.getUserAgent(null);
 
         assertEquals("unknown", userAgent);
     }

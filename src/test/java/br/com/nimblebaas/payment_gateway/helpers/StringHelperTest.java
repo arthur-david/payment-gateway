@@ -4,88 +4,37 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class StringHelperTest {
 
-    @Test
-    void shouldRemoveAllNonNumericCharacters() {
-        String input = "123.456.789-00";
-
+    @ParameterizedTest
+    @CsvSource({
+        "123.456.789-00,12345678900",
+        "12345678900,12345678900",
+        "abc123def456!@#,123456",
+        "abcdef!@#$%,''",
+        "'',''",
+        "'123 456 789 00',12345678900"
+    })
+    void shouldExtractOnlyNumbers(String input, String expected) {
         String result = StringHelper.onlyNumbers(input);
-
-        assertEquals("12345678900", result);
+        assertEquals(expected, result);
     }
 
-    @Test
-    void shouldReturnSameStringWhenOnlyNumbers() {
-        String input = "12345678900";
-
-        String result = StringHelper.onlyNumbers(input);
-
-        assertEquals("12345678900", result);
-    }
-
-    @Test
-    void shouldRemoveLettersAndSpecialCharacters() {
-        String input = "abc123def456!@#";
-
-        String result = StringHelper.onlyNumbers(input);
-
-        assertEquals("123456", result);
-    }
-
-    @Test
-    void shouldReturnEmptyStringWhenNoNumbers() {
-        String input = "abcdef!@#$%";
-
-        String result = StringHelper.onlyNumbers(input);
-
-        assertEquals("", result);
-    }
-
-    @Test
-    void shouldReturnEmptyStringWhenInputIsEmpty() {
-        String input = "";
-
-        String result = StringHelper.onlyNumbers(input);
-
-        assertEquals("", result);
-    }
-
-    @Test
-    void shouldRemoveSpacesAndOtherCharacters() {
-        String input = "123 456 789 00";
-
-        String result = StringHelper.onlyNumbers(input);
-
-        assertEquals("12345678900", result);
-    }
-
-    @Test
-    void shouldGetLastFourDigits() {
-        String input = "1234567890";
-
+    @ParameterizedTest
+    @CsvSource({
+        "1234567890,7890",
+        "4111111111111111,1111",
+        "1234,1234",
+        "abcdef1234,1234",
+        "12345678900,8900",
+        "0123456789012345678901234567890,7890"
+    })
+    void shouldGetLastFourDigits(String input, String expected) {
         String result = StringHelper.lastFourDigits(input);
-
-        assertEquals("7890", result);
-    }
-
-    @Test
-    void shouldGetLastFourDigitsFromCreditCard() {
-        String input = "4111111111111111";
-
-        String result = StringHelper.lastFourDigits(input);
-
-        assertEquals("1111", result);
-    }
-
-    @Test
-    void shouldGetLastFourDigitsWhenExactlyFourDigits() {
-        String input = "1234";
-
-        String result = StringHelper.lastFourDigits(input);
-
-        assertEquals("1234", result);
+        assertEquals(expected, result);
     }
 
     @Test
@@ -95,33 +44,6 @@ class StringHelperTest {
         assertThrows(StringIndexOutOfBoundsException.class, () -> {
             StringHelper.lastFourDigits(input);
         });
-    }
-
-    @Test
-    void shouldGetLastFourCharactersIncludingNonNumeric() {
-        String input = "abcdef1234";
-
-        String result = StringHelper.lastFourDigits(input);
-
-        assertEquals("1234", result);
-    }
-
-    @Test
-    void shouldGetLastFourDigitsFromCPF() {
-        String input = "12345678900";
-
-        String result = StringHelper.lastFourDigits(input);
-
-        assertEquals("8900", result);
-    }
-
-    @Test
-    void shouldGetLastFourDigitsFromLongString() {
-        String input = "0123456789012345678901234567890";
-
-        String result = StringHelper.lastFourDigits(input);
-
-        assertEquals("7890", result);
     }
 }
 

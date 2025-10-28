@@ -6,6 +6,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import br.com.nimblebaas.payment_gateway.dtos.internal.validation.CPFValidationResultRecord;
 
@@ -20,10 +23,9 @@ class CPFHelperTest {
         assertEquals("CPF is required", result.message());
     }
 
-    @Test
-    void shouldReturnTrueForValidCPF() {
-        String cpf = "12345678909";
-
+    @ParameterizedTest
+    @ValueSource(strings = {"12345678909", "123.456.789-09", "52998224725", "529.982.247-25"})
+    void shouldReturnTrueForValidCPF(String cpf) {
         CPFValidationResultRecord result = CPFHelper.validate(cpf);
 
         assertNotNull(result);
@@ -31,37 +33,14 @@ class CPFHelperTest {
         assertEquals("CPF is valid", result.message());
     }
 
-    @Test
-    void shouldReturnTrueForValidCPFWithFormatting() {
-        String cpf = "123.456.789-09";
-
-        CPFValidationResultRecord result = CPFHelper.validate(cpf);
-
-        assertNotNull(result);
-        assertTrue(result.isValid());
-        assertEquals("CPF is valid", result.message());
-    }
-
-    @Test
-    void shouldReturnFalseForCPFWithLessThan11Digits() {
-        String cpf = "123456789";
-
+    @ParameterizedTest
+    @CsvSource({"123456789,'CPF must be 11 digits'", "123456789012,'CPF must be 11 digits'", "'','CPF must be 11 digits'"})
+    void shouldReturnFalseForInvalidCPFLength(String cpf, String expectedMessage) {
         CPFValidationResultRecord result = CPFHelper.validate(cpf);
 
         assertNotNull(result);
         assertFalse(result.isValid());
-        assertEquals("CPF must be 11 digits", result.message());
-    }
-
-    @Test
-    void shouldReturnFalseForCPFWithMoreThan11Digits() {
-        String cpf = "123456789012";
-
-        CPFValidationResultRecord result = CPFHelper.validate(cpf);
-
-        assertNotNull(result);
-        assertFalse(result.isValid());
-        assertEquals("CPF must be 11 digits", result.message());
+        assertEquals(expectedMessage, result.message());
     }
 
     @Test
@@ -105,87 +84,21 @@ class CPFHelperTest {
         }
     }
 
-    @Test
-    void shouldReturnTrueWhenTextIsCPFFormat() {
-        assertTrue(CPFHelper.isCPF("12345678909"));
+    @ParameterizedTest
+    @ValueSource(strings = {"12345678909", "123.456.789-09"})
+    void shouldReturnTrueWhenTextIsCPFFormat(String text) {
+        assertTrue(CPFHelper.isCPF(text));
     }
 
-    @Test
-    void shouldReturnTrueWhenTextIsCPFFormatted() {
-        assertTrue(CPFHelper.isCPF("123.456.789-09"));
-    }
-
-    @Test
-    void shouldReturnFalseWhenTextIsNotCPF() {
-        assertFalse(CPFHelper.isCPF("123456789"));
-    }
-
-    @Test
-    void shouldReturnFalseWhenTextIsEmail() {
-        assertFalse(CPFHelper.isCPF("test@email.com"));
+    @ParameterizedTest
+    @ValueSource(strings = {"123456789", "test@email.com", "", "1234567890a", "123456789012", "123-456-789.09", "123.456.78909"})
+    void shouldReturnFalseForInvalidCPFFormats(String text) {
+        assertFalse(CPFHelper.isCPF(text));
     }
 
     @Test
     void shouldReturnFalseWhenTextIsNull() {
         assertFalse(CPFHelper.isCPF(null));
-    }
-
-    @Test
-    void shouldReturnFalseWhenTextIsEmpty() {
-        assertFalse(CPFHelper.isCPF(""));
-    }
-
-    @Test
-    void shouldReturnFalseWhenTextHasLetters() {
-        assertFalse(CPFHelper.isCPF("1234567890a"));
-    }
-
-    @Test
-    void shouldReturnFalseWhenTextIsTooLong() {
-        assertFalse(CPFHelper.isCPF("123456789012"));
-    }
-
-    @Test
-    void shouldReturnFalseWhenTextHasIncorrectFormatting() {
-        assertFalse(CPFHelper.isCPF("123-456-789.09"));
-    }
-
-    @Test
-    void shouldReturnFalseForPartiallyFormattedCPF() {
-        assertFalse(CPFHelper.isCPF("123.456.78909"));
-    }
-
-    @Test
-    void shouldValidateCPFWithOnlyNumbers() {
-        String cpf = "52998224725";
-
-        CPFValidationResultRecord result = CPFHelper.validate(cpf);
-
-        assertNotNull(result);
-        assertTrue(result.isValid());
-        assertEquals("CPF is valid", result.message());
-    }
-
-    @Test
-    void shouldReturnFalseForEmptyCPF() {
-        String cpf = "";
-
-        CPFValidationResultRecord result = CPFHelper.validate(cpf);
-
-        assertNotNull(result);
-        assertFalse(result.isValid());
-        assertEquals("CPF must be 11 digits", result.message());
-    }
-
-    @Test
-    void shouldRemoveFormattingBeforeValidation() {
-        String cpf = "529.982.247-25";
-
-        CPFValidationResultRecord result = CPFHelper.validate(cpf);
-
-        assertNotNull(result);
-        assertTrue(result.isValid());
-        assertEquals("CPF is valid", result.message());
     }
 }
 

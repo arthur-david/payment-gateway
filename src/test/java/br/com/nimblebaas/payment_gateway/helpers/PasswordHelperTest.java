@@ -7,6 +7,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import br.com.nimblebaas.payment_gateway.dtos.internal.validation.PasswordValidationResultRecord;
@@ -21,10 +24,9 @@ class PasswordHelperTest {
         ReflectionTestUtils.setField(passwordHelper, "passwordLengthMin", 8);
     }
 
-    @Test
-    void shouldReturnTrueForStrongPassword() {
-        String password = "Senha@123";
-
+    @ParameterizedTest
+    @ValueSource(strings = {"Senha@123", "Passw0rd!", "SuperS3cur3P@ssw0rdWithL0tsOfCh@r@ct3rs!", "P@ssw0rd!#$"})
+    void shouldReturnTrueForStrongPassword(String password) {
         PasswordValidationResultRecord result = passwordHelper.verifyIfIsStrong(password);
 
         assertNotNull(result);
@@ -32,59 +34,21 @@ class PasswordHelperTest {
         assertEquals("A senha é forte", result.message());
     }
 
-    @Test
-    void shouldReturnFalseWhenPasswordIsTooShort() {
-        String password = "Ab1@";
-
+    @ParameterizedTest
+    @CsvSource({
+        "Ab1@,'A senha deve ter pelo menos 8 caracteres'",
+        "senha@123,'A senha deve conter pelo menos uma letra maiúscula'",
+        "SENHA@123,'A senha deve conter pelo menos uma letra minúscula'",
+        "Senha@abc,'A senha deve conter pelo menos um número'",
+        "Senha123,'A senha deve conter pelo menos um caractere especial ''!@#$%^&*()'''",
+        "'','A senha deve ter pelo menos 8 caracteres'"
+    })
+    void shouldReturnFalseForWeakPasswords(String password, String expectedMessage) {
         PasswordValidationResultRecord result = passwordHelper.verifyIfIsStrong(password);
 
         assertNotNull(result);
         assertFalse(result.isStrong());
-        assertEquals("A senha deve ter pelo menos 8 caracteres", result.message());
-    }
-
-    @Test
-    void shouldReturnFalseWhenPasswordHasNoUpperCase() {
-        String password = "senha@123";
-
-        PasswordValidationResultRecord result = passwordHelper.verifyIfIsStrong(password);
-
-        assertNotNull(result);
-        assertFalse(result.isStrong());
-        assertEquals("A senha deve conter pelo menos uma letra maiúscula", result.message());
-    }
-
-    @Test
-    void shouldReturnFalseWhenPasswordHasNoLowerCase() {
-        String password = "SENHA@123";
-
-        PasswordValidationResultRecord result = passwordHelper.verifyIfIsStrong(password);
-
-        assertNotNull(result);
-        assertFalse(result.isStrong());
-        assertEquals("A senha deve conter pelo menos uma letra minúscula", result.message());
-    }
-
-    @Test
-    void shouldReturnFalseWhenPasswordHasNoDigit() {
-        String password = "Senha@abc";
-
-        PasswordValidationResultRecord result = passwordHelper.verifyIfIsStrong(password);
-
-        assertNotNull(result);
-        assertFalse(result.isStrong());
-        assertEquals("A senha deve conter pelo menos um número", result.message());
-    }
-
-    @Test
-    void shouldReturnFalseWhenPasswordHasNoSpecialCharacter() {
-        String password = "Senha123";
-
-        PasswordValidationResultRecord result = passwordHelper.verifyIfIsStrong(password);
-
-        assertNotNull(result);
-        assertFalse(result.isStrong());
-        assertEquals("A senha deve conter pelo menos um caractere especial '!@#$%^&*()'", result.message());
+        assertEquals(expectedMessage, result.message());
     }
 
     @Test
@@ -110,48 +74,6 @@ class PasswordHelperTest {
         assertFalse(result.isStrong());
     }
 
-    @Test
-    void shouldValidatePasswordWithExactlyMinimumRequirements() {
-        String password = "Passw0rd!";
 
-        PasswordValidationResultRecord result = passwordHelper.verifyIfIsStrong(password);
-
-        assertNotNull(result);
-        assertTrue(result.isStrong());
-        assertEquals("A senha é forte", result.message());
-    }
-
-    @Test
-    void shouldValidateVeryLongStrongPassword() {
-        String password = "SuperS3cur3P@ssw0rdWithL0tsOfCh@r@ct3rs!";
-
-        PasswordValidationResultRecord result = passwordHelper.verifyIfIsStrong(password);
-
-        assertNotNull(result);
-        assertTrue(result.isStrong());
-        assertEquals("A senha é forte", result.message());
-    }
-
-    @Test
-    void shouldValidatePasswordWithMultipleSpecialCharacters() {
-        String password = "P@ssw0rd!#$";
-
-        PasswordValidationResultRecord result = passwordHelper.verifyIfIsStrong(password);
-
-        assertNotNull(result);
-        assertTrue(result.isStrong());
-        assertEquals("A senha é forte", result.message());
-    }
-
-    @Test
-    void shouldReturnFalseForEmptyPassword() {
-        String password = "";
-
-        PasswordValidationResultRecord result = passwordHelper.verifyIfIsStrong(password);
-
-        assertNotNull(result);
-        assertFalse(result.isStrong());
-        assertEquals("A senha deve ter pelo menos 8 caracteres", result.message());
-    }
 }
 
