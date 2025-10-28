@@ -7,4 +7,8 @@ public class StringHelper {
     public static String onlyNumbers(String string) {
         return string.replaceAll("\\D", "");
     }
+
+    public static String lastFourDigits(String string) {
+        return string.substring(string.length() - 4);
+    }
 }

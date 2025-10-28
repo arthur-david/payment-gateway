@@ -14,10 +14,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import br.com.nimblebaas.payment_gateway.configs.authentication.UserAuthenticated;
 import br.com.nimblebaas.payment_gateway.dtos.input.charge.ChargeInputRecord;
-import br.com.nimblebaas.payment_gateway.dtos.output.charge.ChargeOutputRecord;
+import br.com.nimblebaas.payment_gateway.dtos.output.charge.ChargeOutputDTO;
 import br.com.nimblebaas.payment_gateway.enums.charge.ChargeStatus;
 import br.com.nimblebaas.payment_gateway.services.charge.ChargeService;
-import lombok.RequiredArgsConstructor;  
+import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
 @RestController
@@ -27,13 +27,13 @@ public class ChargeController {
     private final ChargeService chargeService;
     
     @PostMapping
-    public ResponseEntity<ChargeOutputRecord> create(@AuthenticationPrincipal UserAuthenticated userAuthenticated, @RequestBody ChargeInputRecord chargeInputRecord) {
+    public ResponseEntity<ChargeOutputDTO> create(@AuthenticationPrincipal UserAuthenticated userAuthenticated, @RequestBody ChargeInputRecord chargeInputRecord) {
         var charge = chargeService.create(userAuthenticated, chargeInputRecord);
         return ResponseEntity.status(HttpStatus.CREATED).body(charge);
     }
 
     @GetMapping("/sent")
-    public ResponseEntity<List<ChargeOutputRecord>> getSentCharges(
+    public ResponseEntity<List<ChargeOutputDTO>> getSentCharges(
             @AuthenticationPrincipal UserAuthenticated userAuthenticated,
             @RequestParam(required = false) List<ChargeStatus> statuses) {
         var sentCharges = chargeService.getSentChargesByUser(userAuthenticated, statuses);
@@ -41,7 +41,7 @@ public class ChargeController {
     }
 
     @GetMapping("/received")
-    public ResponseEntity<List<ChargeOutputRecord>> getReceivedCharges(
+    public ResponseEntity<List<ChargeOutputDTO>> getReceivedCharges(
             @AuthenticationPrincipal UserAuthenticated userAuthenticated,
             @RequestParam(required = false) List<ChargeStatus> statuses) {
         var receivedCharges = chargeService.getReceivedChargesByUser(userAuthenticated, statuses);

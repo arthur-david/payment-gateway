@@ -7,8 +7,10 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import br.com.nimblebaas.payment_gateway.entities.account.Account;
+import br.com.nimblebaas.payment_gateway.entities.account.HoldBalance;
 import br.com.nimblebaas.payment_gateway.entities.charge.Charge;
 import br.com.nimblebaas.payment_gateway.enums.transaction.TransactionPurpose;
+import br.com.nimblebaas.payment_gateway.enums.transaction.TransactionStatus;
 import br.com.nimblebaas.payment_gateway.enums.transaction.TransactionType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -20,6 +22,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -52,6 +55,16 @@ public class Transaction {
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private TransactionPurpose purpose;
+
+    @Column(nullable = false)
+    private TransactionStatus status;
+
+    @Column(nullable = false)
+    private String authorizationIdentifier;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "hold_balance_id")
+    private HoldBalance holdBalance;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "charge_id")

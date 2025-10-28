@@ -1,5 +1,7 @@
 package br.com.nimblebaas.payment_gateway.clients.authorizer.models;
 
+import static java.util.Objects.nonNull;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -13,4 +15,12 @@ public class AuthorizerResponse {
 
     private String status;
     private AuthorizerResponseData data;
+
+    public boolean isSuccess() {
+        return "success".equalsIgnoreCase(status);
+    }
+
+    public boolean isAuthorized() {
+        return isSuccess() && nonNull(data) && data.isAuthorized();
+    }
 }

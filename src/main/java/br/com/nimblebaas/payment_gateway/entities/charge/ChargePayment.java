@@ -1,24 +1,19 @@
 package br.com.nimblebaas.payment_gateway.entities.charge;
 
-
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import br.com.nimblebaas.payment_gateway.entities.user.User;
-import br.com.nimblebaas.payment_gateway.enums.charge.ChargeStatus;
+import br.com.nimblebaas.payment_gateway.enums.charge.PaymentMethod;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
@@ -34,36 +29,29 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "charges")
-public class Charge {
+@Table(name = "charge_payments")
+public class ChargePayment {
 
     @Setter(AccessLevel.NONE)
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(unique = true, nullable = false)
-    private String identifier;
+    @OneToOne
+    @JoinColumn(name = "charge_id", nullable = false)
+    private Charge charge;
 
-    @ManyToOne
-    @JoinColumn(name = "originator_user_id", nullable = false)
-    private User originatorUser;
-
-    @ManyToOne
-    @JoinColumn(name = "destination_user_id", nullable = false)
-    private User destinationUser;
-
-    @Column(nullable = false)
-    private BigDecimal amount;
-
-    private String description;
-    
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
-    private ChargeStatus status;
+    private PaymentMethod paymentMethod;
 
-    @OneToOne(mappedBy = "charge", fetch = FetchType.LAZY)
-    private ChargePayment payment;
+    private String authorizationIdentifier;
+
+    private String cardNumber;
+
+    private LocalDateTime paidAt;
+
+    private LocalDateTime cancelledAt;
 
     @Column(nullable = false)
     @CreationTimestamp
@@ -72,4 +60,5 @@ public class Charge {
     @Column(nullable = false)
     @UpdateTimestamp
     private LocalDateTime updatedAt;
+
 }
