@@ -1,3 +1,3 @@
-alter table transactions add column status varchar not null;
-alter table transactions add column authorization_identifier varchar not null;
-alter table transactions add column hold_balance_id bigint references hold_balances(id);
+alter table if exists transactions add column if not exists status varchar not null;
+alter table if exists transactions add column if not exists authorization_identifier varchar not null;
+alter table if exists transactions add column if not exists hold_balance_id bigint references hold_balances(id);

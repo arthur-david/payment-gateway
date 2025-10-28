@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -87,6 +88,21 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorDTO> handleGenericException(Exception ex, WebRequest request) {
+
+        if (ex instanceof NoResourceFoundException) {
+
+            String details = String.format("O recurso %s %s não foi encontrado", request.getDescription(false), request.getContextPath());
+            ErrorDTO errorDTO = ErrorDTO.builder()
+                .status(HttpStatus.NOT_FOUND)
+                .reason("NOT_FOUND")
+                .details(details)
+                .build();
+
+            return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(errorDTO);
+        }
+
         log.error("Unexpected error: {} - Source: {}", ex.getMessage(), ex.getClass(), ex);
         
         ErrorDTO errorDTO = ErrorDTO.builder()

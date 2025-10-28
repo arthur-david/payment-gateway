@@ -47,7 +47,7 @@ public class Account implements Serializable {
     private BigDecimal totalBalance = BigDecimal.ZERO;
 
     @Column(nullable = false)
-    private BigDecimal availableBalance = BigDecimal.ZERO;
+    private BigDecimal holdBalance = BigDecimal.ZERO;
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
@@ -64,5 +64,10 @@ public class Account implements Serializable {
     public Account(User user) {
         setUser(user);
         setStatus(AccountStatus.ACTIVE);
+    }
+
+    public BigDecimal getAvailableBalance() {
+        var availableBalance = getTotalBalance().subtract(getHoldBalance());
+        return availableBalance.compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO : availableBalance;
     }
 }

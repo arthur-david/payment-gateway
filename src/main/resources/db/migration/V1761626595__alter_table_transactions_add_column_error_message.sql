@@ -1,0 +1,1 @@
+alter table if exists transactions add column if not exists error_message text;
