@@ -3,6 +3,7 @@ package br.com.nimblebaas.payment_gateway.services.user;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -12,12 +13,15 @@ import br.com.nimblebaas.payment_gateway.dtos.input.user.UserInputRecord;
 import br.com.nimblebaas.payment_gateway.dtos.output.user.UserOutputRecord;
 import br.com.nimblebaas.payment_gateway.entities.user.User;
 import br.com.nimblebaas.payment_gateway.enums.exception.BusinessRules;
+import br.com.nimblebaas.payment_gateway.events.authentication.PasswordChangeEvent;
 import br.com.nimblebaas.payment_gateway.exceptions.BusinessRuleException;
 import br.com.nimblebaas.payment_gateway.helpers.CPFHelper;
+import br.com.nimblebaas.payment_gateway.helpers.HttpRequestHelper;
 import br.com.nimblebaas.payment_gateway.helpers.StringHelper;
 import br.com.nimblebaas.payment_gateway.repositories.user.UserRepository;
 import br.com.nimblebaas.payment_gateway.services.account.AccountService;
 import br.com.nimblebaas.payment_gateway.services.authentication.RefreshTokenService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
@@ -29,6 +33,8 @@ public class UserService {
     private final AccountService accountService;
     private final PasswordEncoder passwordEncoder;
     private final RefreshTokenService refreshTokenService;
+    private final ApplicationEventPublisher eventPublisher;
+    private final HttpServletRequest httpServletRequest;
     
     public UserOutputRecord create(UserInputRecord userInputRecord) {
         userCreationValidator.validate(userInputRecord);
@@ -57,6 +63,13 @@ public class UserService {
         refreshTokenService.revokeUserRefreshTokens(user);
 
         userRepository.save(user);
+
+        String requestInfo = HttpRequestHelper.formatRequestInfo(httpServletRequest);
+        eventPublisher.publishEvent(new PasswordChangeEvent(
+            user,
+            user.getCpf(),
+            requestInfo
+        ));
     }
 
     public UserOutputRecord getUser(String cpfOrEmail) {

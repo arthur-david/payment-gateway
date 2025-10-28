@@ -1,6 +1,7 @@
 create table if not exists authentication_audits (
     id bigserial primary key,
-    user_id bigint not null,
+    user_id bigint,
+    cpf_or_email varchar,
     ips varchar,
     action varchar not null,
     success boolean,

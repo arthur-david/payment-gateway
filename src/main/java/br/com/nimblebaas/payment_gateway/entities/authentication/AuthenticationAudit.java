@@ -37,6 +37,8 @@ public class AuthenticationAudit {
     @JoinColumn(name = "user_id")
     private User user;
 
+    private String cpfOrEmail;
+
     private String ips;
 
     @Column(nullable = false)
