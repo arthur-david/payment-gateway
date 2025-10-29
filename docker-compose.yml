@@ -1,0 +1,56 @@
+services:
+  payment-gateway:
+    container_name: payment-gateway
+    build:
+      context: ./payment-gateway
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    ports:
+      - "${PAYMENT_GATEWAY_PORT:-8080}:${PAYMENT_GATEWAY_PORT:-8080}"
+    depends_on:
+      - postgres_db
+    networks:
+      - app_network
+
+  postgres_db:
+    container_name: postgres_db
+    image: postgres:16
+    restart: always
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_APP_DB}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
+    networks:
+      - app_network
+
+  sonarqube:
+    container_name: sonarqube
+    image: sonarqube:community
+    depends_on:
+      - postgres_db
+      - payment-gateway
+    ports:
+      - "9000:9000"
+    env_file:
+      - .env
+    environment:
+      SONAR_JDBC_URL: jdbc:postgresql://postgres_db:5432/sonarqube
+      SONAR_JDBC_USERNAME: ${DB_USER}
+      SONAR_JDBC_PASSWORD: ${DB_PASSWORD}
+    networks:
+      - app_network
+
+volumes:
+  postgres_data:
+
+networks:
+  app_network:
+    driver: bridge

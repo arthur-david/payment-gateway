@@ -1,0 +1,1 @@
+mvn clean verify sonar:sonar -Dsonar.projectKey=payment-gateway -Dsonar.projectName="Payment Gateway" -Dsonar.host.url=http://localhost:9000 -Dsonar.token=sqp_815fda063bcbd144a6f89cce1b0ad375e876927d
